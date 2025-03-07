@@ -1,46 +1,33 @@
 const express = require('express');
+require('dotenv').config();
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
 const app = express();
-const port = 5000;
-// create contents
-let contents = [
-  { id: 1, title: 'content 1', content: 'Content 1' },
-  { id: 2, title: 'content 2', content: 'Content 2' },
-  { id: 3, title: 'content 3', content: 'Content 3' }
-];
-// create an endpoint to get all contents
-app.get('/contents', (req, res) => {
-  res.json(contents);
+const port = process.env.PORT;
+const MONGO_URI = process.env.MONGO_URI;
+const usersRouter = require('./routes/users');
+
+// MongoDB Connection
+mongoose.connect(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
-// create an endpoint to get an content by id
-app.get('/contents/:id', (req, res) => {
-  const content = contents.find(a => a.id === parseInt(req.params.id));
-  if (!content) return res.status(404).send('content not found');
-  res.json(content);
+
+const db = mongoose.connection;
+
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+db.once('open', () => {
+  console.log('Connected to MongoDB');
 });
-// create an endpoint to create an content
-app.post('/contents', (req, res) => {
-  const content = {
-    id: contents.length + 1,
-    title: req.body.title,
-    content: req.body.content
-  };
-  contents.push(content);
-  res.json(content);
+
+// Middleware
+app.use(bodyParser.json());
+
+//Invoke routes
+
+app.use('/user', usersRouter);
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
-// create an endpoint to update an content
-app.put('/contents/:id', (req, res) => {
-  const content = contents.find(a => a.id === parseInt(req.params.id));
-  if (!content) return res.status(404).send('content not found');
-  content.title = req.body.title;
-  content.content = req.body.content;
-  res.json(content);
-});
-// create an endpoint to delete an content
-app.delete('/contents/:id', (req, res) => {
-  const content = contents.find(a => a.id === parseInt(req.params.id));
-  if (!content) return res.status(404).send('content not found');
-  const index = contents.indexOf(content);
-  contents.splice(index, 1);
-  res.json(content);
-});
-app.listen(port, () => console.log(`Sample API listening at http://localhost:${port}`));
